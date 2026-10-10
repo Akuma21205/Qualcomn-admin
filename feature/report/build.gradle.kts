@@ -28,11 +28,19 @@ android {
 
 dependencies {
     implementation(project(":core:domain"))
+    implementation(project(":core:contracts"))
     implementation(project(":core:workflow"))
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui.tooling.preview)
+    testImplementation(project(":adapter:stt"))
+    testImplementation(project(":adapter:llm"))
+    testImplementation(project(":adapter:tts"))
+    testImplementation(project(":adapter:decision"))
     testImplementation(libs.junit)
 }

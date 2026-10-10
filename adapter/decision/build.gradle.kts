@@ -9,6 +9,7 @@ java {
 
 dependencies {
     implementation(project(":core:contracts"))
+    implementation(project(":core:domain"))
     implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)
 }

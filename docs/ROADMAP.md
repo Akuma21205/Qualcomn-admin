@@ -10,12 +10,12 @@
 ## M1 — Freeze contracts [COMPLETED]
 Agree on report schema, mandatory fields, presence-aware patch semantics, `SttEngine`, `IncidentExtractor`, `SpeechOutput`, and `DecisionEngine`. Verified with unit test suites and test fakes across `:core:domain`, `:core:contracts`, and `:core:workflow`. See [`docs/M1_CHECKLIST.md`](M1_CHECKLIST.md). **Exit:** shared contracts frozen and committed.
 
-## M2 — Parallel module development [IN PROGRESS - LAPTOP A & LAPTOP B COMPLETED]
+## M2 — Parallel module development [COMPLETED]
 - **Laptop A [COMPLETED]**: STT/audio adapter (`WhisperSttAdapter`, fallback `Whisper-Base`), `AudioPreprocessor` (PCM16, VAD, 80-channel log-Mel spectrogram), `WavAudioUtil` (RIFF/WAVE encoder/decoder), `AudioCaptureManager` (Flow-based recording & VAD utterance capture), `AudioFixtures`, and full unit test suite. See [`docs/LAPTOP_A_STT.md`](LAPTOP_A_STT.md).
 - **Laptop B [COMPLETED]**: LLM extraction (`Qwen3.5-2B` via GenieX, fallback `Llama-3.2`), `LlmPromptBuilder`, `LlmPatchParser`, `GenieEngine`, offline TTS verification (`AndroidSpeechOutput`), and Python evaluation harness. See [`docs/M2_LAPTOP_B_CHECKLIST.md`](M2_LAPTOP_B_CHECKLIST.md).
-- **Laptop C/integration owner**: domain, workflow state machine, local decision rules, Compose UI with fake adapters (in progress).
-- **Python evaluation [COMPLETED]**: local extraction benchmark, WER evaluator, and optional Jev benchmark harness.
-**Exit:** each workstream has tests, setup notes and stable interfaces.
+- **Laptop C/integration owner [COMPLETED]**: Interactive Compose `ReportScreen`, `IncidentReportViewModel` multi-turn orchestrator, `LocalRuleDecisionEngine` on-device triage heuristics, `MainActivity` audio permissions wiring, and unit test suites. See [`docs/M2_LAPTOP_C_CHECKLIST.md`](M2_LAPTOP_C_CHECKLIST.md).
+- **Python evaluation [COMPLETED]**: Local extraction benchmark, WER evaluator, and optional Jev benchmark harness.
+**Exit:** each workstream has tests, setup notes and stable interfaces. **Exit criteria met.**
 
 ## M3 — Board vertical slice
 Build/install Android shell; integrate real STT (`Whisper-Small`), then LLM (`Qwen3.5-2B`), then TTS on QIDK; verify Hexagon NPU acceleration in Logcat (`QnnHtp`, `Genie Backend: HTP`). Benchmark combined RAM and thermal profile. **Exit:** real board runs microphone → STT → LLM → validated report.
