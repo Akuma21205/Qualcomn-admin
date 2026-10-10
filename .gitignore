@@ -16,6 +16,8 @@ captures/
 *.onnx
 *.tflite
 *.so
+*.apk
+vendor-samples/*.apk
 
 # Python evaluation
 __pycache__/

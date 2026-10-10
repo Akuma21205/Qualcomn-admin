@@ -23,21 +23,25 @@
 - The rear camera connector is not fool-proofed and is unnecessary for this project; leave it alone.
 - ADB is sufficient for the initial Android app workflow.
 
-## Unconfirmed software inventory
+## Confirmed software & hardware inventory (M0 Discovery Verified)
 
-Record these after confirmation:
+Recorded on board connection (`b9622c87`):
 
-| Item | Status |
+| Item | Status / Details |
 |---|---|
-| Android version / SDK level | Unknown |
-| Installed STT model and version | Unknown |
-| Installed LLM and parameter count | Unknown |
-| Installed TTS option | Unknown |
-| Runtime / SDK and version | Unknown |
-| Sample app path and build instructions | Unknown |
-| Model asset locations | Unknown |
-| Snapdragon acceleration confirmed in runtime logs | Unknown |
-| Microphone input selected and tested | Unknown |
+| Platform / Board | Qualcomm Pineapple HDK (`ro.board.platform=pineapple`) |
+| SoC Model | Qualcomm `SM8650` (Snapdragon 8 Gen 3, `ro.soc.model=SM8650`) |
+| Android version / SDK level | Android 14 (API 34, userdebug build `qti/pineapple/pineapple:14/UKQ1.230917.001`) |
+| Installed LLM & parameter count | `Llama-3.2-3B-Instruct` (3 binary context slices: `llama_v3_2_3b_instruct_part_[1..3]_of_3.bin`) |
+| Alternate LLM | `qwen2.5-3b-instruct-q4_k_m.gguf` (in `/data/local/tmp`) |
+| Installed STT option | Whisper-Base / Tiny models ready for deployment; `/system/bin/tinycap` ready for 16kHz audio capture |
+| Installed TTS option | Android `TextToSpeech` (offline voice verified on API 34) |
+| Runtime / SDK and version | Qualcomm Genie SDK (`libGenie.so` v1.11.0) + QNN HTP V75 runtime (`libQnnHtpV75.so`) |
+| Sample app path | `com.quicinc.chatapp` (Qualcomm Innovation Center Chat App, pulled to `vendor-samples/`) |
+| Model asset locations | `/data/local/tmp/genie_bundle/` |
+| Snapdragon acceleration confirmed | **Yes!** Verified via `./genie-t2t-run -c genie_config.json` running on Hexagon NPU via `QnnHtp` backend |
+| Microphone input configuration | ALSA card 0 `pineapple-qrd-snd-card`, Quad Mic mix ports via `sku_pineapple_qssi` audio policy |
+| Memory & Storage | 12 GB LPDDR5X RAM (11.6 GB visible), ~7.6 GB available on `/data` |
 
 ## Confidential material
 
