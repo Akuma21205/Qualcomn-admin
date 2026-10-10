@@ -12,7 +12,7 @@ import com.qualcomm.incident.core.domain.ReportPatch
  * Coordinates prompt construction, on-device generation, and strict JSON patch parsing.
  */
 class GenieLlmAdapter(
-    val engine: GenieEngine = SimulatedGenieEngine(),
+    val engine: GenieEngine = NativeGenieEngine(),
     val promptBuilder: LlmPromptBuilder = LlmPromptBuilder(),
     val parser: LlmPatchParser = LlmPatchParser(),
     val config: GenieConfig = GenieConfig(),

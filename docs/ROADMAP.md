@@ -17,8 +17,8 @@ Agree on report schema, mandatory fields, presence-aware patch semantics, `SttEn
 - **Python evaluation [COMPLETED]**: Local extraction benchmark, WER evaluator, and optional Jev benchmark harness.
 **Exit:** each workstream has tests, setup notes and stable interfaces. **Exit criteria met.**
 
-## M3 — Board vertical slice
-Build/install Android shell; integrate real STT (`Whisper-Small`), then LLM (`Qwen3.5-2B`), then TTS on QIDK; verify Hexagon NPU acceleration in Logcat (`QnnHtp`, `Genie Backend: HTP`). Benchmark combined RAM and thermal profile. **Exit:** real board runs microphone → STT → LLM → validated report.
+## M3 — Board vertical slice [IN PROGRESS - ADAPTER BRIDGES & RUNNER COMPLETED]
+Build/install Android shell; integrate real STT (`Whisper-Small`), then LLM (`Qwen3.5-2B`), then TTS on QIDK; verify Hexagon NPU acceleration in Logcat (`QnnHtp`, `Genie Backend: HTP`). Benchmark combined RAM and thermal profile. See [`docs/M3_CHECKLIST.md`](M3_CHECKLIST.md) and [`scripts/m3_board_vertical_slice.ps1`](../scripts/m3_board_vertical_slice.ps1). **Exit:** real board runs microphone → STT → LLM → validated report.
 
 ## M4 — Interaction completion
 Implement missing-field follow-ups, multi-turn additions, corrections, incident categorization, and visual fallback when TTS fails. **Exit:** updates preserve unrelated fields; offline decision flow operates without network.

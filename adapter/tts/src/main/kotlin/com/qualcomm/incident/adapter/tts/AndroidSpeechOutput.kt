@@ -16,8 +16,12 @@ import kotlin.coroutines.resume
  * - Graceful failure fallback so visual UI prompts are never blocked.
  */
 class AndroidSpeechOutput(
-    val bridge: TtsEngineBridge = SimulatedTtsBridge()
+    val bridge: TtsEngineBridge
 ) : SpeechOutput {
+
+    constructor(context: Any? = null) : this(
+        bridge = if (context != null) AndroidSystemTtsBridge(context) else SimulatedTtsBridge()
+    )
 
     override suspend fun speak(text: String): Result<Unit> {
         if (text.isBlank()) {
