@@ -1,0 +1,27 @@
+# Gradle & Android
+*.iml
+.gradle
+/local.properties
+/.idea/
+.DS_Store
+/build
+*/build
+captures/
+.externalNativeBuild
+.cxx
+
+# Model weights & binaries (Keep out of repo unless authorized)
+*.bin
+*.dlc
+*.onnx
+*.tflite
+*.so
+
+# Python evaluation
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+ENV/
