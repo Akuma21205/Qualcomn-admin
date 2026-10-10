@@ -34,7 +34,7 @@ data class DecisionResult(
     val severityScore: Int? = null, // e.g., 1-5 scale
     val isUrgent: Boolean = false,
     val routingDepartment: String? = null,
-    val engineName: String // "LocalRules", "OnDeviceLlama", or "JevSystemOne"
+    val engineName: String // "LocalRules", "OnDeviceQwen", "OnDeviceLlama", or "JevSystemOne"
 )
 
 interface DecisionEngine {
@@ -45,13 +45,13 @@ interface DecisionEngine {
 Define `IncidentReport`, `AudioInput`, `ValidatedReportPatch`, and `DecisionContext` in shared domain/contracts code. Use Kotlin data classes, sealed result/error types, and `kotlinx.serialization` where compatible.
 
 ## Behavioral contract
-- **STT:** Returns an explicit empty/error result; it must not invent a transcript.
-- **LLM Extraction:** Returns only evidence-supported field updates.
+- **STT (`Whisper-Small` / `Whisper-Base`):** Returns an explicit empty/error result; it must not invent a transcript.
+- **LLM Extraction (`Qwen3.5-2B` / `Llama-3.2`):** Returns only evidence-supported field updates. Suppresses conversational chatter and output formatting drift.
 - **Validation:** Validate JSON, field names and types before merging.
 - **Presence-Aware Patch:** Omitted patch fields do not erase current values. Explicit corrections update only the target field.
 - **Workflow Authority:** The deterministic workflow state machine—not the LLM—decides whether required fields are missing.
 - **Decision Engine (Incident Classification & Triage):**
-  - Default production implementation (`LocalDecisionEngine`) executes completely on-device using deterministic rules or constrained on-device LLM prompts.
+  - Default production implementation (`LocalDecisionEngine`) executes completely on-device using deterministic rules or constrained on-device LLM prompts (`Qwen3.5-2B`).
   - Optional `JevDecisionAdapter` accesses TypeSafe AI's `POST /v1/systemone` API only during laptop evaluation or hybrid test builds. If network is unavailable, it must fail safely to the local engine without throwing or crashing.
-- **TTS:** Must work offline; UI prompts remain usable if TTS fails.
+- **TTS (`AndroidSpeechOutput` / `Piper`):** Must work offline; UI prompts remain usable if TTS fails.
 - **Fake Adapters:** For local unit testing only, never silent demo fallbacks.

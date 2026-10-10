@@ -6,7 +6,7 @@ import com.qualcomm.incident.core.contracts.TranscriptResult
 
 /**
  * On-device Whisper STT adapter targeting Qualcomm Hexagon NPU.
- * Implements [SttEngine] via Qualcomm AI Hub compiled Whisper assets.
+ * Implements [SttEngine] via Qualcomm AI Hub compiled Whisper-Small assets (fallback Whisper-Base).
  */
 class WhisperSttAdapter : SttEngine {
 

@@ -4,11 +4,11 @@
 
 | Workstream | Laptop | Owns | Deliverables |
 |---|---|---|---|
-| STT + audio | A | `AudioRecord`, STT adapter (Whisper), audio format tests | `SttEngine`, transcript fixtures, setup and latency notes |
-| LLM + TTS | B (same laptop) | LLM extraction (Llama-3.2) and offline speech output | `IncidentExtractor`, `SpeechOutput`, extraction/TTS tests |
+| STT + audio | A | `AudioRecord`, STT adapter (`Whisper-Small`), audio format tests | `SttEngine`, transcript fixtures, setup and latency notes |
+| LLM + TTS | B (same laptop) | LLM extraction (`Qwen3.5-2B`) and offline speech output | `IncidentExtractor`, `SpeechOutput`, extraction/TTS tests |
 | App + domain/workflow | C or integration laptop | Kotlin schema, merge logic, state machine, local decision rules, Compose UI | Buildable app using fake adapters |
 | Evaluation & Benchmarking | Any laptop | Python dataset, WER, field metrics, and Jev System One benchmark | Repeatable JSON/CSV results |
-| Board integration | Designated integration laptop + Qualcomm QIDK board | Runtime integration, acceleration proof, offline demo | End-to-end verified build on Snapdragon 8 Elite |
+| Board integration | Designated integration laptop + Qualcomm QIDK board | Runtime integration (`Whisper-Small` + `Qwen3.5-2B`), acceleration proof, offline demo | End-to-end verified build on Snapdragon 8 Elite |
 
 These are workstreams, not assumptions about which named person owns them.
 

@@ -5,8 +5,8 @@ import com.qualcomm.incident.core.contracts.ValidatedReportPatch
 import com.qualcomm.incident.core.domain.IncidentReport
 
 /**
- * On-device Llama-3.2 extractor adapter targeting Qualcomm GenieX / Hexagon NPU.
- * Implements [IncidentExtractor] via Qualcomm AI Hub compiled Llama-3.2 W4A16 graph.
+ * On-device LLM extractor adapter targeting Qualcomm GenieX / Hexagon NPU.
+ * Implements [IncidentExtractor] via Qualcomm AI Hub compiled Qwen3.5-2B W4A16 graph (fallback Llama-3.2).
  */
 class GenieLlmAdapter : IncidentExtractor {
 
