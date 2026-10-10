@@ -1,34 +1,34 @@
 # Roadmap
-
+ 
 ## M0 — Device discovery
-Connect with ADB; record Android version/build; obtain model/runtime/sample docs and acceleration-verification method from Qualcomm. **Exit:** device recognized and inventory recorded.
+Connect QIDK board with ADB; record Android version/build; verify Snapdragon 8 Elite SoC (`SM8750-AC`); obtain Qualcomm AI Hub models (`Whisper`, `Llama-3.2`) and runtime samples (`GenieX`, QNN). **Exit:** device recognized and inventory recorded.
 
 ## M1 — Freeze contracts
-Agree on report schema, mandatory fields, presence-aware patch semantics, `SttEngine`, `IncidentExtractor`, and `SpeechOutput`. **Exit:** shared contracts committed before parallel coding.
+Agree on report schema, mandatory fields, presence-aware patch semantics, `SttEngine`, `IncidentExtractor`, `SpeechOutput`, and `DecisionEngine`. **Exit:** shared contracts committed before parallel coding.
 
 ## M2 — Parallel module development
-- Laptop A: STT/audio adapter and fixtures.
-- Laptop B: LLM extraction + offline TTS in one environment.
-- Laptop C/integration owner: domain, workflow, Compose UI with fake adapters.
-- Python evaluation can be developed independently.
+- Laptop A: STT/audio adapter (Whisper) and fixtures.
+- Laptop B: LLM extraction (`Llama-3.2`) + offline TTS in one environment.
+- Laptop C/integration owner: domain, workflow state machine, local decision rules, Compose UI with fake adapters.
+- Python evaluation: local test suite and optional Jev benchmark harness.
 **Exit:** each workstream has tests, setup notes and stable interfaces.
 
 ## M3 — Board vertical slice
-Build/install Android shell; integrate real STT, then LLM, then TTS; verify acceleration. **Exit:** real board runs microphone → STT → LLM → validated report.
+Build/install Android shell; integrate real STT, then LLM, then TTS on QIDK; verify Hexagon NPU acceleration in logs. **Exit:** real board runs microphone → STT → LLM → validated report.
 
 ## M4 — Interaction completion
-Implement missing-field follow-ups, multi-turn additions, corrections and visual fallback when TTS fails. **Exit:** updates preserve unrelated fields.
+Implement missing-field follow-ups, multi-turn additions, corrections, incident categorization, and visual fallback when TTS fails. **Exit:** updates preserve unrelated fields; offline decision flow operates without network.
 
-## M5 — Evaluation
-Build ~40 labeled cases; measure WER, field accuracy, null correctness and latency; test error paths. **Exit:** reproducible results.
+## M5 — Evaluation & Benchmarking
+Build ~40 labeled cases; measure WER, field accuracy, null correctness and latency; run `jev_benchmark.py` on laptop to compare cloud System One decision quality against on-device LLM/rules. **Exit:** reproducible quantitative results.
 
 ## M6 — Offline demo
-Airplane-mode end-to-end run; confirm no cloud dependency; prepare demo and recovery path. **Exit:** core workflow works offline on the Qualcomm board.
+Airplane-mode end-to-end run on the Qualcomm QIDK board; verify Jev/cloud calls are disconnected and zero network packets are sent; prepare demo and recovery path. **Exit:** core workflow works 100% offline on Snapdragon 8 Elite.
 
 ## Priority under time pressure
-1. Vendor sample/runtime.
+1. Vendor sample/runtime (Qualcomm AI Hub + QIDK).
 2. Shared contracts.
-3. Real STT + LLM on board.
-4. Follow-up/correction logic.
+3. Real STT (Whisper) + LLM (Llama-3.2) on QIDK board.
+4. Follow-up/correction logic and local triage.
 5. Offline proof and metrics.
-6. UI polish and extras.
+6. UI polish and optional Jev benchmark.

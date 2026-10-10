@@ -14,6 +14,6 @@
 9. Are prerecorded clips allowed?
 10. How will offline execution and acceleration be checked?
 
-## Team
+## Architecture / Hybrid evaluation
 11. Can modules be prototyped on separate laptops and integrated on the board?
-12. Who is “Jev” in the handoff and what is their role? This document treats LLM + TTS as one workstream based on the requested split.
+12. **Resolved:** "Jev" in the initial handoff refers to TypeSafe AI's Jev (System One decision model), evaluated for fast classification/triage. Because Jev is cloud-only, our mandatory path uses on-device models on QIDK. Question: Are teams permitted to showcase a laptop-side hybrid comparison (on-device vs Jev cloud benchmark), or must 100% of all demo materials focus strictly on on-device execution?

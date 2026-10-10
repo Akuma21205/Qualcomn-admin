@@ -1,14 +1,15 @@
 # Qualcomm AI Incident Report Assistant
 
-Megathon X project: fully on-device voice-to-incident-report Android app for the Qualcomm HDK8750 (SM8750P).
+Megathon X project: fully on-device voice-to-incident-report Android app for the Qualcomm® Innovators Development Kit (QIDK) targeting Snapdragon 8 Elite for Galaxy (`SM8750-AC`).
 
 ## Constraints
-- Use the open-source model(s) supplied for the Qualcomm board, through verified vendor runtime/sample code.
-- All inference runs on-device with Snapdragon acceleration; no cloud APIs.
-- Unknown report values remain null.
+- Use open-source models optimized from **Qualcomm AI Hub** (`Whisper` for STT, `Llama-3.2` via GenieX for LLM).
+- All production inference runs on-device with Hexagon NPU acceleration; no cloud APIs in mandatory path.
+- Unknown report values remain null; unstated fields are never fabricated.
+- Jev by TypeSafe AI (System One model) is evaluated as a laptop-side decision benchmark only; it is not a production runtime dependency.
 - Use Kotlin/JVM type-safe contracts between modules.
-- Team members may develop modules on separate laptops; LLM + TTS share one laptop/workstream.
-- Laptop tests do not prove board/NPU integration.
+- Team members develop modules in parallel using feature branches and local fixtures.
+- Final demonstration must function completely offline in Airplane Mode.
 
 ## Documentation
 - `PROJECT_CONTEXT.md` — confirmed context and unknowns

@@ -2,10 +2,11 @@
 
 ## Target device
 
-- Development kit: Qualcomm HDK8750 (SM8750P).
-- The handoff identifies the platform as corresponding to Snapdragon 8 Elite; confirm platform/runtime details with Qualcomm.
-- The observed setup showed Android running on the display, so the planned delivery is an Android app installed through ADB.
-- The board includes microphones, a speaker connection, USB-C, Micro USB, HDMI output, SD socket, and M.2 connector.
+- Platform: Qualcomm® Innovators Development Kit (QIDK).
+- SoC: Snapdragon 8 Elite for Galaxy (`SM8750-AC` / `SM8750`).
+- Target Compute: Hexagon NPU for high-efficiency on-device neural acceleration.
+- OS: Android running on the display; development workflow via ADB over USB-C.
+- Interfaces: Onboard microphones, speaker header, USB-C, Micro USB, HDMI output, SD socket, and M.2 connector.
 
 ## Audio-relevant observations
 

@@ -16,4 +16,4 @@
 - Do not commit model binaries unless licensing/repository policy allows it.
 - Integrate one real adapter at a time on the board.
 
-The handoff mentions “Jev” but does not confirm who this is or their role. Assign named ownership only after confirming with the team.
+The handoff mentioned “Jev”, which has been clarified as TypeSafe AI's Jev (System One decision model) rather than a team member. The team workstreams remain organized across Laptop A (STT), Laptop B (LLM + TTS), Laptop C (App & Workflow), and Board Integration.
