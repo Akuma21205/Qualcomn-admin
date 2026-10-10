@@ -9,9 +9,10 @@ import com.qualcomm.incident.core.contracts.SpeechOutput
 import com.qualcomm.incident.core.contracts.SttEngine
 import com.qualcomm.incident.core.domain.IncidentReport
 import com.qualcomm.incident.core.domain.OptionalField
-import com.qualcomm.incident.core.domain.Provenance
 import com.qualcomm.incident.core.domain.ReportPatch
+import com.qualcomm.incident.core.domain.SeverityLevel
 import com.qualcomm.incident.core.workflow.IncidentWorkflowStateMachine
+import com.qualcomm.incident.core.workflow.MultiTurnConversationManager
 import com.qualcomm.incident.core.workflow.ReportPatchMerger
 import com.qualcomm.incident.core.workflow.RequiredFieldsPolicy
 import kotlinx.coroutines.CoroutineScope
@@ -22,9 +23,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Orchestrates on-device voice reporting interaction.
+ * Orchestrates on-device voice reporting interaction with multi-turn support.
  * Coordinates STT, LLM entity extraction, local triage decision engine,
- * deterministic patch merging, and offline TTS prompts.
+ * multi-turn turn tracking, corrections, undo rollback, and offline TTS prompts with visual fallback.
  */
 class IncidentReportViewModel(
     val sttEngine: SttEngine,
@@ -32,11 +33,19 @@ class IncidentReportViewModel(
     val speechOutput: SpeechOutput,
     val decisionEngine: DecisionEngine,
     val stateMachine: IncidentWorkflowStateMachine = IncidentWorkflowStateMachine(),
+    val conversationManager: MultiTurnConversationManager = MultiTurnConversationManager(),
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 ) {
 
-    val reportState: StateFlow<IncidentReport> = stateMachine.reportState
+    sealed interface TtsStatus {
+        data object Ready : TtsStatus
+        data object Speaking : TtsStatus
+        data class Unavailable(val reason: String) : TtsStatus
+    }
+
+    val reportState: StateFlow<IncidentReport> = conversationManager.currentReport
     val workflowState: StateFlow<IncidentWorkflowStateMachine.State> = stateMachine.workflowState
+    val conversationTurns: StateFlow<List<MultiTurnConversationManager.ConversationTurn>> = conversationManager.turns
 
     private val _lastTranscript = MutableStateFlow("")
     val lastTranscript: StateFlow<String> = _lastTranscript.asStateFlow()
@@ -44,12 +53,12 @@ class IncidentReportViewModel(
     private val _lastDecision = MutableStateFlow<DecisionResult?>(null)
     val lastDecision: StateFlow<DecisionResult?> = _lastDecision.asStateFlow()
 
-    private val _isSpeaking = MutableStateFlow(false)
-    val isSpeaking: StateFlow<Boolean> = _isSpeaking.asStateFlow()
+    private val _ttsStatus = MutableStateFlow<TtsStatus>(TtsStatus.Ready)
+    val ttsStatus: StateFlow<TtsStatus> = _ttsStatus.asStateFlow()
 
     /**
      * Ingests audio input and runs the multi-stage pipeline:
-     * Audio -> STT -> LLM -> Deterministic Merge -> Decision Engine -> Follow-up/Review.
+     * Audio -> STT -> LLM -> Multi-Turn Merge -> Decision Engine -> Follow-up/Review.
      */
     fun processAudio(audio: AudioInput) {
         scope.launch {
@@ -67,9 +76,7 @@ class IncidentReportViewModel(
                 // Audio was silence / empty, return to prior state without hallucination
                 val missing = RequiredFieldsPolicy.findMissingFields(reportState.value)
                 if (missing.isNotEmpty()) {
-                    val next = missing.first()
-                    // Re-prompt missing field
-                    speakPrompt(next.promptQuestion)
+                    speakPrompt(missing.first().promptQuestion)
                 }
                 return@launch
             }
@@ -80,6 +87,7 @@ class IncidentReportViewModel(
 
     /**
      * Processes narrative text (from ASR or manual text field entry).
+     * Handles multi-turn incremental additions, explicit corrections, and negations.
      */
     fun processNarrativeText(text: String) {
         scope.launch {
@@ -90,33 +98,36 @@ class IncidentReportViewModel(
                 return@launch
             }
 
-            var mergedReport = ReportPatchMerger.merge(reportState.value, patchResult.patch)
+            // Apply turn to conversation manager (records turn history and updates report)
+            conversationManager.applyTurn(text, patchResult.patch)
+            var currentReport = conversationManager.currentReport.value
 
             // Evaluate triage/classification if incidentType or severityLevel not explicitly stated
-            if (mergedReport.incidentType == null || mergedReport.severityLevel == null) {
+            if (currentReport.incidentType == null || currentReport.severityLevel == null) {
                 val decisionRes = decisionEngine.evaluate(
                     DecisionContext(
                         transcript = text,
-                        currentReport = mergedReport
+                        currentReport = currentReport
                     )
                 ).getOrNull()
 
                 if (decisionRes != null) {
                     _lastDecision.value = decisionRes
+                    val severityStr = SeverityLevel.fromScore(decisionRes.severityScore)?.displayName ?: "Medium"
                     val decisionPatch = ReportPatch(
-                        incidentType = if (mergedReport.incidentType == null) OptionalField.Present(decisionRes.incidentType) else OptionalField.NotPresent,
-                        severityLevel = if (mergedReport.severityLevel == null) OptionalField.Present(
-                            if (decisionRes.isUrgent) "Critical" else "Medium"
-                        ) else OptionalField.NotPresent
+                        incidentType = if (currentReport.incidentType == null) OptionalField.Present(decisionRes.incidentType) else OptionalField.NotPresent,
+                        severityLevel = if (currentReport.severityLevel == null) OptionalField.Present(severityStr) else OptionalField.NotPresent
                     )
-                    mergedReport = ReportPatchMerger.merge(mergedReport, decisionPatch)
+                    conversationManager.applyTurn("[Auto Triage: ${decisionRes.incidentType}]", decisionPatch)
+                    currentReport = conversationManager.currentReport.value
                 }
             }
 
+            // Update state machine
             stateMachine.onPatchExtracted(patchResult.patch)
 
             // If missing fields exist, trigger verbal follow-up question
-            val missing = RequiredFieldsPolicy.findMissingFields(mergedReport)
+            val missing = RequiredFieldsPolicy.findMissingFields(currentReport)
             if (missing.isNotEmpty()) {
                 speakPrompt(missing.first().promptQuestion)
             }
@@ -124,22 +135,48 @@ class IncidentReportViewModel(
     }
 
     /**
-     * Directly updates a specific field (manual review override).
+     * Applies an explicit manual or verbal correction to a specific mandatory field.
      */
-    fun updateField(field: RequiredFieldsPolicy.MandatoryField, value: String) {
+    fun applyCorrection(field: RequiredFieldsPolicy.MandatoryField, newValue: String?) {
         val patch = when (field) {
             RequiredFieldsPolicy.MandatoryField.INCIDENT_TYPE ->
-                ReportPatch(incidentType = OptionalField.Present(value.ifBlank { null }))
+                ReportPatch(incidentType = OptionalField.Present(newValue?.ifBlank { null }))
             RequiredFieldsPolicy.MandatoryField.SEVERITY_LEVEL ->
-                ReportPatch(severityLevel = OptionalField.Present(value.ifBlank { null }))
-            RequiredFieldsPolicy.MandatoryField.INCIDENT_LOCATION ->
-                ReportPatch(incidentLocation = OptionalField.Present(value.ifBlank { null }))
+                ReportPatch(severityLevel = OptionalField.Present(newValue?.ifBlank { null }))
+            RequiredFieldsPolicy.MandatoryField.LOCATION ->
+                ReportPatch(incidentLocation = OptionalField.Present(newValue?.ifBlank { null }))
             RequiredFieldsPolicy.MandatoryField.DATE_TIME ->
-                ReportPatch(dateTime = OptionalField.Present(value.ifBlank { null }))
-            RequiredFieldsPolicy.MandatoryField.INCIDENT_DESCRIPTION ->
-                ReportPatch(incidentDescription = OptionalField.Present(value.ifBlank { null }))
+                ReportPatch(dateTime = OptionalField.Present(newValue?.ifBlank { null }))
+            RequiredFieldsPolicy.MandatoryField.DESCRIPTION ->
+                ReportPatch(incidentDescription = OptionalField.Present(newValue?.ifBlank { null }))
         }
+
+        conversationManager.applyTurn("Manual correction for ${field.displayName}", patch)
         stateMachine.onPatchExtracted(patch)
+    }
+
+    /**
+     * Undoes the last conversation turn, rolling back the report state to the prior turn.
+     */
+    fun undoLastTurn(): Boolean {
+        val undone = conversationManager.undoLastTurn()
+        if (undone) {
+            val restoredReport = conversationManager.currentReport.value
+            val missing = RequiredFieldsPolicy.findMissingFields(restoredReport)
+            if (missing.isNotEmpty()) {
+                val next = missing.first()
+                stateMachine.onPatchExtracted(ReportPatch()) // Re-evaluates state machine
+                scope.launch { speakPrompt(next.promptQuestion) }
+            }
+        }
+        return undone
+    }
+
+    /**
+     * Directly updates a specific field (backward compatibility).
+     */
+    fun updateField(field: RequiredFieldsPolicy.MandatoryField, value: String) {
+        applyCorrection(field, value)
     }
 
     /**
@@ -157,19 +194,24 @@ class IncidentReportViewModel(
     }
 
     fun reset() {
+        conversationManager.reset()
         stateMachine.reset()
         _lastTranscript.value = ""
         _lastDecision.value = null
+        _ttsStatus.value = TtsStatus.Ready
     }
 
+    /**
+     * Speaks a verbal prompt offline with non-blocking visual fallback.
+     */
     private suspend fun speakPrompt(prompt: String) {
-        _isSpeaking.value = true
+        _ttsStatus.value = TtsStatus.Speaking
         try {
             speechOutput.speak(prompt)
-        } catch (_: Exception) {
+            _ttsStatus.value = TtsStatus.Ready
+        } catch (e: Exception) {
             // Visual prompt remains functional even if audio speech output fails
-        } finally {
-            _isSpeaking.value = false
+            _ttsStatus.value = TtsStatus.Unavailable(e.message ?: "TTS service offline")
         }
     }
 }
