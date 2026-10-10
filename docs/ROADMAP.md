@@ -20,8 +20,12 @@ Agree on report schema, mandatory fields, presence-aware patch semantics, `SttEn
 ## M3 — Board vertical slice
 Build/install Android shell; integrate real STT (`Whisper-Small`), then LLM (`Qwen3.5-2B`), then TTS on QIDK; verify Hexagon NPU acceleration in Logcat (`QnnHtp`, `Genie Backend: HTP`). Benchmark combined RAM and thermal profile. **Exit:** real board runs microphone → STT → LLM → validated report.
 
-## M4 — Interaction completion
-Implement missing-field follow-ups, multi-turn additions, corrections, incident categorization, and visual fallback when TTS fails. **Exit:** updates preserve unrelated fields; offline decision flow operates without network.
+## M4 — Interaction completion [COMPLETED]
+- Multi-turn additions: `MultiTurnConversationManager` ensures follow-ups incrementally populate reports and strictly preserve previously stated fields.
+- Targeted corrections & negations: Explicit field overrides and list clearings supported via speech and manual UI dialogs.
+- Autonomous categorization & triage: `LocalRuleDecisionEngine` covers all 8 standard taxonomies, applies 1–5 severity rubric, and routes to emergency units offline.
+- Non-blocking visual fallback: If TTS audio is offline or fails, all visual prompts and review screens continue seamlessly.
+- Turn rollback: Single-tap "Undo Turn" restores report state prior to misrecognitions. See [`docs/M4_INTERACTION_CHECKLIST.md`](M4_INTERACTION_CHECKLIST.md). **Exit criteria met.**
 
 ## M5 — Evaluation & Benchmarking
 Build ~40 labeled cases; measure WER (`Whisper-Small` vs `Base`), field extraction accuracy (`Qwen3.5-2B` vs `Llama-3.2`), null correctness and latency; run `jev_benchmark.py` on laptop to compare cloud System One decision quality against on-device LLM/rules. **Exit:** reproducible quantitative results.

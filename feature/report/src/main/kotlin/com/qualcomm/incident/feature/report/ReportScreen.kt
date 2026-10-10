@@ -3,7 +3,7 @@ package com.qualcomm.incident.feature.report
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -33,6 +34,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -51,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import com.qualcomm.incident.core.domain.IncidentReport
 import com.qualcomm.incident.core.domain.Provenance
 import com.qualcomm.incident.core.workflow.IncidentWorkflowStateMachine
+import com.qualcomm.incident.core.workflow.MultiTurnConversationManager
 import com.qualcomm.incident.core.workflow.RequiredFieldsPolicy
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,9 +67,12 @@ fun ReportScreen(
     val workflowState by viewModel.workflowState.collectAsState()
     val lastTranscript by viewModel.lastTranscript.collectAsState()
     val lastDecision by viewModel.lastDecision.collectAsState()
-    val isSpeaking by viewModel.isSpeaking.collectAsState()
+    val ttsStatus by viewModel.ttsStatus.collectAsState()
+    val conversationTurns by viewModel.conversationTurns.collectAsState()
 
     var textInput by remember { mutableStateOf("") }
+    var activeCorrectionField by remember { mutableStateOf<RequiredFieldsPolicy.MandatoryField?>(null) }
+    var correctionText by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -80,7 +86,7 @@ fun ReportScreen(
                             color = Color.White
                         )
                         Text(
-                            text = "Snapdragon 8 Gen 3 • Hexagon NPU Accelerated",
+                            text = "Snapdragon 8 Gen 3 • Hexagon NPU Accelerated • Offline Ready",
                             fontSize = 11.sp,
                             color = Color(0xFF90CAF9)
                         )
@@ -104,11 +110,19 @@ fun ReportScreen(
             item {
                 WorkflowStatusCard(
                     state = workflowState,
-                    isSpeaking = isSpeaking
+                    ttsStatus = ttsStatus
                 )
             }
 
-            // 2. Follow-Up Question / Prompt Card (if missing fields exist)
+            // 2. Visual Fallback Warning for TTS Offline
+            if (ttsStatus is IncidentReportViewModel.TtsStatus.Unavailable) {
+                val unavailable = ttsStatus as IncidentReportViewModel.TtsStatus.Unavailable
+                item {
+                    TtsVisualFallbackBanner(reason = unavailable.reason)
+                }
+            }
+
+            // 3. Follow-Up Question / Prompt Card (if missing fields exist)
             if (workflowState is IncidentWorkflowStateMachine.State.AskingFollowUp) {
                 val followUp = workflowState as IncidentWorkflowStateMachine.State.AskingFollowUp
                 item {
@@ -122,7 +136,7 @@ fun ReportScreen(
                 }
             }
 
-            // 3. Audio & Voice Control Section
+            // 4. Audio & Voice Control Section
             item {
                 VoiceControlSection(
                     state = workflowState,
@@ -142,7 +156,7 @@ fun ReportScreen(
                 )
             }
 
-            // 4. Decision Triage Banner (if evaluated)
+            // 5. Decision Triage Banner (if evaluated)
             if (lastDecision != null) {
                 item {
                     DecisionTriageCard(
@@ -154,15 +168,68 @@ fun ReportScreen(
                 }
             }
 
-            // 5. Incident Report Data Fields Card
+            // 6. Multi-Turn Conversation History Card
+            if (conversationTurns.isNotEmpty()) {
+                item {
+                    ConversationHistoryCard(
+                        turns = conversationTurns,
+                        onUndo = { viewModel.undoLastTurn() }
+                    )
+                }
+            }
+
+            // 7. Incident Report Data Fields Card
             item {
                 IncidentReportDataCard(
                     report = report,
                     workflowState = workflowState,
                     onConfirm = { viewModel.confirmAndFinalize() },
-                    onReset = { viewModel.reset() }
+                    onReset = { viewModel.reset() },
+                    onRequestCorrection = { field, currentValue ->
+                        activeCorrectionField = field
+                        correctionText = currentValue ?: ""
+                    }
                 )
             }
+        }
+
+        // Inline Field Correction Dialog
+        if (activeCorrectionField != null) {
+            AlertDialog(
+                onDismissRequest = { activeCorrectionField = null },
+                title = { Text("Correct ${activeCorrectionField!!.displayName}") },
+                text = {
+                    Column {
+                        Text(
+                            text = "Provide the corrected value or leave blank to clear:",
+                            fontSize = 13.sp,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = correctionText,
+                            onValueChange = { correctionText = it },
+                            placeholder = { Text("Enter updated value...") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.applyCorrection(activeCorrectionField!!, correctionText)
+                            activeCorrectionField = null
+                        }
+                    ) {
+                        Text("Apply")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { activeCorrectionField = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }
@@ -170,7 +237,7 @@ fun ReportScreen(
 @Composable
 fun WorkflowStatusCard(
     state: IncidentWorkflowStateMachine.State,
-    isSpeaking: Boolean
+    ttsStatus: IncidentReportViewModel.TtsStatus
 ) {
     val (statusText, statusColor, isProcessing) = when (state) {
         is IncidentWorkflowStateMachine.State.Idle -> Triple("Ready to Record", Color(0xFF455A64), false)
@@ -206,7 +273,7 @@ fun WorkflowStatusCard(
                     fontWeight = FontWeight.SemiBold,
                     color = statusColor
                 )
-                if (isSpeaking) {
+                if (ttsStatus is IncidentReportViewModel.TtsStatus.Speaking) {
                     Text(
                         text = "Speaking verbal prompt offline...",
                         fontSize = 11.sp,
@@ -220,6 +287,36 @@ fun WorkflowStatusCard(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
                     color = statusColor
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TtsVisualFallbackBanner(reason: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = "ℹ️", fontSize = 16.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(
+                    text = "TTS Audio Readback Offline",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFF57F17)
+                )
+                Text(
+                    text = "Speech output unavailable ($reason). All visual prompts remain fully operational.",
+                    fontSize = 11.sp,
+                    color = Color(0xFF795548)
                 )
             }
         }
@@ -337,7 +434,7 @@ fun VoiceControlSection(
             Divider()
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Manual text entry fallback
+            // Manual text entry fallback / corrections
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -345,7 +442,7 @@ fun VoiceControlSection(
                 OutlinedTextField(
                     value = textInput,
                     onValueChange = onTextInputChange,
-                    placeholder = { Text("Or enter incident description manually...", fontSize = 13.sp) },
+                    placeholder = { Text("Or add detail / correction...", fontSize = 13.sp) },
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -354,6 +451,62 @@ fun VoiceControlSection(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF37474F))
                 ) {
                     Text("Parse")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ConversationHistoryCard(
+    turns: List<MultiTurnConversationManager.ConversationTurn>,
+    onUndo: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Conversation History (${turns.size} turns)",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF37474F)
+                )
+                OutlinedButton(
+                    onClick = onUndo,
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text("Undo Turn", fontSize = 11.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            turns.takeLast(3).forEach { turn ->
+                Row(
+                    modifier = Modifier.padding(vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "T${turn.turnIndex} [${turn.turnType.name.replace("_", " ")}]:",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1565C0)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "\"${turn.userUtterance}\"",
+                        fontSize = 11.sp,
+                        color = Color(0xFF424242),
+                        maxLines = 1
+                    )
                 }
             }
         }
@@ -414,7 +567,8 @@ fun IncidentReportDataCard(
     report: IncidentReport,
     workflowState: IncidentWorkflowStateMachine.State,
     onConfirm: () -> Unit,
-    onReset: () -> Unit
+    onReset: () -> Unit,
+    onRequestCorrection: (RequiredFieldsPolicy.MandatoryField, String?) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -440,11 +594,41 @@ fun IncidentReportDataCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            ReportFieldRow("Incident Type", report.incidentType, report.fieldProvenance["incidentType"], isMandatory = true)
-            ReportFieldRow("Severity Level", report.severityLevel, report.fieldProvenance["severityLevel"], isMandatory = true)
-            ReportFieldRow("Location", report.incidentLocation, report.fieldProvenance["incidentLocation"], isMandatory = true)
-            ReportFieldRow("Date / Time", report.dateTime, report.fieldProvenance["dateTime"], isMandatory = true)
-            ReportFieldRow("Description", report.incidentDescription, report.fieldProvenance["incidentDescription"], isMandatory = true)
+            ReportFieldRow(
+                label = "Incident Type",
+                value = report.incidentType,
+                provenance = report.fieldProvenance["incidentType"],
+                isMandatory = true,
+                onEdit = { onRequestCorrection(RequiredFieldsPolicy.MandatoryField.INCIDENT_TYPE, report.incidentType) }
+            )
+            ReportFieldRow(
+                label = "Severity Level",
+                value = report.severityLevel,
+                provenance = report.fieldProvenance["severityLevel"],
+                isMandatory = true,
+                onEdit = { onRequestCorrection(RequiredFieldsPolicy.MandatoryField.SEVERITY_LEVEL, report.severityLevel) }
+            )
+            ReportFieldRow(
+                label = "Location",
+                value = report.incidentLocation,
+                provenance = report.fieldProvenance["incidentLocation"],
+                isMandatory = true,
+                onEdit = { onRequestCorrection(RequiredFieldsPolicy.MandatoryField.LOCATION, report.incidentLocation) }
+            )
+            ReportFieldRow(
+                label = "Date / Time",
+                value = report.dateTime,
+                provenance = report.fieldProvenance["dateTime"],
+                isMandatory = true,
+                onEdit = { onRequestCorrection(RequiredFieldsPolicy.MandatoryField.DATE_TIME, report.dateTime) }
+            )
+            ReportFieldRow(
+                label = "Description",
+                value = report.incidentDescription,
+                provenance = report.fieldProvenance["incidentDescription"],
+                isMandatory = true,
+                onEdit = { onRequestCorrection(RequiredFieldsPolicy.MandatoryField.DESCRIPTION, report.incidentDescription) }
+            )
 
             ReportFieldRow("Equipment / Asset", report.equipmentAssetInvolved, report.fieldProvenance["equipmentAssetInvolved"])
             ReportFieldRow("Immediate Actions", report.immediateActionsTaken, report.fieldProvenance["immediateActionsTaken"])
@@ -503,7 +687,8 @@ fun ReportFieldRow(
     label: String,
     value: String?,
     provenance: Provenance?,
-    isMandatory: Boolean = false
+    isMandatory: Boolean = false,
+    onEdit: (() -> Unit)? = null
 ) {
     Column(modifier = Modifier.padding(vertical = 4.dp)) {
         Row(
@@ -522,13 +707,23 @@ fun ReportFieldRow(
                     Text(text = " *", fontSize = 13.sp, color = Color.Red, fontWeight = FontWeight.Bold)
                 }
             }
-            if (provenance != null) {
-                Text(
-                    text = provenance.name,
-                    fontSize = 10.sp,
-                    color = Color.Gray,
-                    fontWeight = FontWeight.Medium
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (provenance != null) {
+                    Text(
+                        text = provenance.name,
+                        fontSize = 10.sp,
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                if (onEdit != null) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "✏️",
+                        fontSize = 12.sp,
+                        modifier = Modifier.clickable { onEdit() }
+                    )
+                }
             }
         }
         Text(
