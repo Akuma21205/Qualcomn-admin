@@ -1,7 +1,11 @@
 # Roadmap
  
-## M0 — Device discovery
-Connect QIDK board with ADB; record Android version/build; verify Snapdragon 8 Elite SoC (`SM8750-AC`); check physical RAM capacity; inspect pre-installed models/libraries; obtain Qualcomm AI Hub models (`Whisper-Small`, `Qwen3.5-2B`) and runtime samples (`GenieX`, QNN). Verify offline TTS voice data. **Exit:** device recognized and inventory recorded.
+## M0 — Device discovery [COMPLETED]
+- Device `b9622c87` connected & authorized via ADB.
+- Hardware verified: Qualcomm `SM8650` (Pineapple HDK), Android 14 (API 34), 12GB RAM.
+- Runtime & models confirmed: Qualcomm Genie SDK v1.11.0 + QNN HTP V75 NPU acceleration verified live with on-device `Llama-3.2-3B-Instruct` in `/data/local/tmp/genie_bundle`.
+- Vendor sample APK pulled to `vendor-samples/com.quicinc.chatapp.apk`.
+- Inventory documented in `docs/HARDWARE_NOTES.md`. **Exit criteria met.**
 
 ## M1 — Freeze contracts [COMPLETED]
 Agree on report schema, mandatory fields, presence-aware patch semantics, `SttEngine`, `IncidentExtractor`, `SpeechOutput`, and `DecisionEngine`. Verified with unit test suites and test fakes across `:core:domain`, `:core:contracts`, and `:core:workflow`. See [`docs/M1_CHECKLIST.md`](M1_CHECKLIST.md). **Exit:** shared contracts frozen and committed.
