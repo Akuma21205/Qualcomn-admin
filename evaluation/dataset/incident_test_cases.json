@@ -1,0 +1,97 @@
+[
+  {
+    "id": "CASE-001",
+    "title": "Processing Plant 4 Toxic Acid Spill",
+    "transcript": "Emergency in Processing Plant 4 Bay 2. A 55-gallon drum of hydrochloric acid ruptured during forklift transit. Dave Miller and Sarah Connor were exposed to fumes and are receiving medical triage. We evacuated the bay and shut off the ventilation.",
+    "ground_truth": {
+      "incident_type": "Chemical Spill",
+      "severity_level": null,
+      "incident_location": "Processing Plant 4 Bay 2",
+      "date_time": null,
+      "persons_involved": ["Dave Miller", "Sarah Connor"],
+      "equipment_asset_involved": "55-gallon drum of hydrochloric acid",
+      "incidentDescription": "A 55-gallon drum of hydrochloric acid ruptured during forklift transit",
+      "immediate_actions_taken": "Evacuated the bay and shut off the ventilation",
+      "witness_information": null,
+      "recommended_follow_up_action": null
+    },
+    "must_be_null": ["severity_level", "date_time", "witness_information", "recommended_follow_up_action"]
+  },
+  {
+    "id": "CASE-002",
+    "title": "Substation B Transformer Explosion",
+    "transcript": "Critical alert at Substation B! Main transformer 2 exploded around 10:15 AM. Flames spreading to the switchgear room. John Miller got severe flash burns. We hit the master grid trip switch immediately. Witnessed by electrician Marcus Vance.",
+    "ground_truth": {
+      "incident_type": "Fire / Explosion",
+      "severity_level": "Critical",
+      "incident_location": "Substation B",
+      "date_time": "10:15 AM",
+      "persons_involved": ["John Miller"],
+      "equipment_asset_involved": "Main transformer 2",
+      "incidentDescription": "Main transformer 2 exploded and flames spreading to switchgear room",
+      "immediate_actions_taken": "Master grid trip switch activated",
+      "witness_information": ["Marcus Vance"],
+      "recommended_follow_up_action": null
+    },
+    "must_be_null": ["recommended_follow_up_action"]
+  },
+  {
+    "id": "CASE-003",
+    "title": "Warehouse 3 Forklift Rack Collision",
+    "transcript": "Reporting an accident in Warehouse 3 aisle 14. An electric forklift hit racking column C4. The lower beam bent and pallets of steel fasteners are leaning dangerously. Operator was Leo Gomez, no injuries. Racking needs immediate ultrasonic inspection.",
+    "ground_truth": {
+      "incident_type": "Equipment Failure",
+      "severity_level": null,
+      "incident_location": "Warehouse 3 aisle 14",
+      "date_time": null,
+      "persons_involved": ["Leo Gomez"],
+      "equipment_asset_involved": "Electric forklift, racking column C4",
+      "incidentDescription": "Forklift hit racking column C4 causing beam to bend and pallets to lean",
+      "immediate_actions_taken": null,
+      "witness_information": null,
+      "recommended_follow_up_action": "Immediate ultrasonic inspection of racking"
+    },
+    "must_be_null": ["severity_level", "date_time", "immediate_actions_taken", "witness_information"]
+  },
+  {
+    "id": "CASE-004",
+    "title": "Break Room False Alarm (All Unstated Null)",
+    "transcript": "Someone burned popcorn in the 2nd floor administration break room. The optical smoke detector triggered briefly, but there is zero damage and no fire.",
+    "ground_truth": {
+      "incident_type": "Other",
+      "severity_level": "Low",
+      "incident_location": "2nd floor administration break room",
+      "date_time": null,
+      "persons_involved": null,
+      "equipment_asset_involved": "Optical smoke detector",
+      "incidentDescription": "Burned popcorn triggered optical smoke detector briefly with zero damage",
+      "immediate_actions_taken": null,
+      "witness_information": null,
+      "recommended_follow_up_action": null
+    },
+    "must_be_null": ["date_time", "persons_involved", "immediate_actions_taken", "witness_information", "recommended_follow_up_action"]
+  },
+  {
+    "id": "CASE-005",
+    "title": "Multi-Turn Correction Case",
+    "transcript": "Fire in Storage Unit 3. Medium severity.",
+    "ground_truth": {
+      "incident_type": "Fire / Explosion",
+      "severity_level": "Medium",
+      "incident_location": "Storage Unit 3"
+    },
+    "multi_turn": {
+      "follow_up_transcript": "Actually correction, it was in Storage Unit 4, not 3, and occurred at 3:30 PM.",
+      "expected_patch": {
+        "incident_location": "Storage Unit 4",
+        "date_time": "3:30 PM"
+      },
+      "expected_merged": {
+        "incident_type": "Fire / Explosion",
+        "severity_level": "Medium",
+        "incident_location": "Storage Unit 4",
+        "date_time": "3:30 PM"
+      }
+    }
+  }
+]
