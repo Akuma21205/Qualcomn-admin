@@ -3,8 +3,8 @@
 ## M0 — Device discovery
 Connect QIDK board with ADB; record Android version/build; verify Snapdragon 8 Elite SoC (`SM8750-AC`); obtain Qualcomm AI Hub models (`Whisper`, `Llama-3.2`) and runtime samples (`GenieX`, QNN). **Exit:** device recognized and inventory recorded.
 
-## M1 — Freeze contracts
-Agree on report schema, mandatory fields, presence-aware patch semantics, `SttEngine`, `IncidentExtractor`, `SpeechOutput`, and `DecisionEngine`. **Exit:** shared contracts committed before parallel coding.
+## M1 — Freeze contracts [COMPLETED]
+Agree on report schema, mandatory fields, presence-aware patch semantics, `SttEngine`, `IncidentExtractor`, `SpeechOutput`, and `DecisionEngine`. Verified with unit test suites and test fakes across `:core:domain`, `:core:contracts`, and `:core:workflow`. See [`docs/M1_CHECKLIST.md`](M1_CHECKLIST.md). **Exit:** shared contracts frozen and committed.
 
 ## M2 — Parallel module development
 - Laptop A: STT/audio adapter (Whisper) and fixtures.
