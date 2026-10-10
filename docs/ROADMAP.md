@@ -11,9 +11,9 @@
 Agree on report schema, mandatory fields, presence-aware patch semantics, `SttEngine`, `IncidentExtractor`, `SpeechOutput`, and `DecisionEngine`. Verified with unit test suites and test fakes across `:core:domain`, `:core:contracts`, and `:core:workflow`. See [`docs/M1_CHECKLIST.md`](M1_CHECKLIST.md). **Exit:** shared contracts frozen and committed.
 
 ## M2 — Parallel module development
-- Laptop A: STT/audio adapter (`Whisper-Small`, fallback `Whisper-Base`) and test audio fixtures.
-- Laptop B: LLM extraction (`Qwen3.5-2B` via GenieX, fallback `Llama-3.2`) + offline TTS verification.
-- Laptop C/integration owner: domain, workflow state machine, local decision rules, Compose UI with fake adapters.
+- **Laptop A [COMPLETED]**: STT/audio adapter (`WhisperSttAdapter`, fallback `Whisper-Base`), `AudioPreprocessor` (PCM16, VAD, 80-channel log-Mel spectrogram), `WavAudioUtil` (RIFF/WAVE encoder/decoder), `AudioCaptureManager` (Flow-based recording & VAD utterance capture), `AudioFixtures`, and full unit test suite. See [`docs/LAPTOP_A_STT.md`](LAPTOP_A_STT.md).
+- **Laptop B [IN PROGRESS]**: LLM extraction (`Qwen3.5-2B` via GenieX, fallback `Llama-3.2`) + offline TTS verification.
+- **Laptop C/integration owner**: domain, workflow state machine, local decision rules, Compose UI with fake adapters.
 - Python evaluation: local test suite and optional Jev benchmark harness.
 **Exit:** each workstream has tests, setup notes and stable interfaces.
 
